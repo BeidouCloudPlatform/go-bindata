@@ -31,7 +31,7 @@ func Translate(c *Config) error {
 	var visitedPaths = make(map[string]bool)
 	// Locate all the assets.
 	for _, input := range c.Input {
-		err = findFiles(input.Path, c.Prefix, input.Recursive, &toc, c.Ignore, knownFuncs, visitedPaths)
+		err = findFiles(input.Path, c.Prefix, input.FileSuffix, c.Arch, input.Recursive, &toc, c.Ignore, knownFuncs, visitedPaths)
 		if err != nil {
 			return err
 		}
@@ -54,7 +54,7 @@ func Translate(c *Config) error {
 	defer bfd.Flush()
 
 	if len(c.Arch) > 0 {
-		if _, err = fmt.Fprintf(bfd, "// go:build %s\n// +build %s\n", c.Arch, c.Arch); err != nil {
+		if _, err = fmt.Fprintf(bfd, "//go:build %s\n// +build %s\n", c.Arch, c.Arch); err != nil {
 			return err
 		}
 	}
@@ -129,7 +129,7 @@ func (v ByName) Less(i, j int) bool { return v[i].Name() < v[j].Name() }
 // findFiles recursively finds all the file paths in the given directory tree.
 // They are added to the given map as keys. Values will be safe function names
 // for each file, which will be used when generating the output code.
-func findFiles(dir, prefix string, recursive bool, toc *[]Asset, ignore []*regexp.Regexp, knownFuncs map[string]int, visitedPaths map[string]bool) error {
+func findFiles(dir, prefix, suffix, arch string, recursive bool, toc *[]Asset, ignore []*regexp.Regexp, knownFuncs map[string]int, visitedPaths map[string]bool) error {
 	dirpath := dir
 	if len(prefix) > 0 {
 		dirpath, _ = filepath.Abs(dirpath)
@@ -185,7 +185,7 @@ func findFiles(dir, prefix string, recursive bool, toc *[]Asset, ignore []*regex
 			if recursive {
 				recursivePath := filepath.Join(dir, file.Name())
 				visitedPaths[asset.Path] = true
-				findFiles(recursivePath, prefix, recursive, toc, ignore, knownFuncs, visitedPaths)
+				findFiles(recursivePath, prefix, suffix, arch, recursive, toc, ignore, knownFuncs, visitedPaths)
 			}
 			continue
 		} else if file.Mode()&os.ModeSymlink == os.ModeSymlink {
@@ -200,7 +200,7 @@ func findFiles(dir, prefix string, recursive bool, toc *[]Asset, ignore []*regex
 			}
 			if _, ok := visitedPaths[linkPath]; !ok {
 				visitedPaths[linkPath] = true
-				findFiles(asset.Path, prefix, recursive, toc, ignore, knownFuncs, visitedPaths)
+				findFiles(asset.Path, prefix, suffix, arch, recursive, toc, ignore, knownFuncs, visitedPaths)
 			}
 			continue
 		}
@@ -209,6 +209,14 @@ func findFiles(dir, prefix string, recursive bool, toc *[]Asset, ignore []*regex
 			asset.Name = asset.Name[len(prefix):]
 		} else {
 			asset.Name = filepath.Join(dir, file.Name())
+		}
+
+		if len(arch) > 0 && !strings.Contains(asset.Name, arch) {
+			continue
+		}
+
+		if len(suffix) > 0 && !strings.HasSuffix(asset.Name, suffix) {
+			continue
 		}
 
 		// If we have a leading slash, get rid of it.

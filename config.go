@@ -20,6 +20,8 @@ type InputConfig struct {
 	// Recursive defines whether subdirectories of Path
 	// should be recursively included in the conversion.
 	Recursive bool
+
+	FileSuffix string
 }
 
 // Config defines a set of options for the asset conversion.

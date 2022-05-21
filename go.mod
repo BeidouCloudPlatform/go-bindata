@@ -1,4 +1,4 @@
-module github.com/BeidouCloudPlatform/go-bindata
+module github.com/BeidouCloudPlatform/go-bindata/v4
 
 go 1.18
 
