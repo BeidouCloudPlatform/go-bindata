@@ -27,6 +27,9 @@ type Config struct {
 	// Name of the package to use. Defaults to 'main'.
 	Package string
 
+	// Arch is the architecture name to use
+	Arch string
+
 	// Tags specify a set of optional build tags, which should be
 	// included in the generated output. The tags are appended to a
 	// `// +build` line in the beginning of the output file
